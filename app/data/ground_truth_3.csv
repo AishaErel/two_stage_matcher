@@ -1,0 +1,16 @@
+source,target
+Name,Name
+Age,Age
+Gender,Sex
+Blood Type,BloodGroup
+Medical Condition,Condition
+Date of Admission,AdmissionDate
+Doctor,DoctorName
+Hospital,Hospital
+Insurance Provider,Insurance
+Billing Amount,Charge
+Room Number,Room
+Admission Type,Type
+Discharge Date,DischargeDate
+Medication,Medication
+Test Results,Results

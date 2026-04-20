@@ -1,0 +1,53 @@
+__TRUTH_MAPPING_1:dict[str, str] = {
+    "Patient_Name": "Name",
+    "Patient_Age": "Age",
+    "Sex": "Gender",
+    "Blood_Group": "Blood Type",
+    "Condition": "Medical Condition",
+    "Adm_Date": "Date of Admission",
+    "Physician": "Doctor",
+    "Hospital_Name": "Hospital",
+    "Insurer": "Insurance Provider",
+    "Total_Charge": "Billing Amount",
+    "Room_No": "Room Number",
+    "Admission_Category": "Admission Type",
+    "Discharge_Date": "Discharge Date",
+    "Drug": "Medication",
+    "Lab_Results": "Test Results"
+}
+
+__TRUTH_MAPPING_2:dict[str, str] = {
+    "Nm": "Name",
+    "Age_yrs": "Age",
+    "Gndr": "Gender",
+    "Bld_Type": "Blood Type",
+    "Med_Cond": "Medical Condition",
+    "AdmDt": "Date of Admission",
+    "Dr_Name": "Doctor",
+    "Hosp": "Hospital",
+    "InsuranceCo": "Insurance Provider",
+    "Bill_Amt": "Billing Amount",
+    "Rm_No": "Room Number",
+    "Adm_Type": "Admission Type",
+    "Dschg_Dt": "Discharge Date",
+    "Med": "Medication",
+    "Test_Out": "Test Results"
+}
+
+__TRUTH_MAPPING_3:dict[str, str] = {
+    "Name": "Name",
+    "Age": "Age",
+    "Sex": "Gender",
+    "BloodGroup": "Blood Type",
+    "Condition": "Medical Condition",
+    "AdmissionDate": "Date of Admission",
+    "DoctorName": "Doctor",
+    "Hospital": "Hospital",
+    "Insurance": "Insurance Provider",
+    "Charge": "Billing Amount",
+    "Room": "Room Number",
+    "Type": "Admission Type",
+    "DischargeDate": "Discharge Date",
+    "Medication": "Medication",
+    "Results": "Test Results"
+}
