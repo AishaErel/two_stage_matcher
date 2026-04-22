@@ -1,0 +1,16 @@
+source,target
+Name,Nm
+Age,Age_yrs
+Gender,Gndr
+Blood Type,Bld_Type
+Medical Condition,Med_Cond
+Date of Admission,AdmDt
+Doctor,Dr_Name
+Hospital,Hosp
+Insurance Provider,InsuranceCo
+Billing Amount,Bill_Amt
+Room Number,Rm_No
+Admission Type,Adm_Type
+Discharge Date,Dschg_Dt
+Medication,Med
+Test Results,Test_Out
