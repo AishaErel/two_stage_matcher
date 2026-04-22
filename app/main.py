@@ -7,7 +7,10 @@ from model.initialization import initialGeneration
 from model.evaluation import Evaluator
 
 def main():
+    ##  Generate initial sources and truths from healthcare data.
+    ##  Uses `initialGeneration()` from `model/initialization.py`.
     # initialGeneration()
+
     pass
 
 if __name__ == "__main__":
