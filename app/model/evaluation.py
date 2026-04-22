@@ -8,15 +8,29 @@ from pathlib import Path
 import model.resource as resource
 
 class Evaluator:
-    def __init__(self, source_path:Path, ground_truth_path:Path) -> None:
+    def __init__(self, source_path:Path, target_path:Path) -> None:
         self.source_df:pd.DataFrame = pd.read_csv(source_path)
-        self.ground_truth_df:pd.DataFrame = pd.read_csv(ground_truth_path)
+        self.target_df:pd.DataFrame = pd.read_csv(target_path)
 
-    def total_cheap_score() -> float:
+    def total_cheap_score(self, ref_col:str, hyp_col:str) -> float:
         result:float = 0.0
-        pass
+        
+        ##  tmp note:: 
+        ##      source data is reference
+        ##      target data is hypothesis
 
-    def cheap_str_sim_score(ref:str, hyp:str, method:int=1) -> float:
+        ##  TODO:: batch random (average?) and collision avoidance
+        rand_ref_val = self.source_df[ref_col].sample(n=1).iloc[0]
+        rand_hyp_val = self.target_df[hyp_col].sample(n=1).iloc[0]
+
+        name_sim:float = Evaluator._cheap_str_sim_score(ref_col, hyp_col)
+        value_sim:float = Evaluator._generic_value_eval(rand_ref_val, rand_hyp_val)
+        data_sim:float = Evaluator._datatype_sim_score(rand_ref_val, rand_hyp_val)
+
+        result = 0.5 * name_sim + 0.3 * value_sim + 0.2 * data_sim
+        return result
+
+    def _cheap_str_sim_score(ref:str, hyp:str, method:int=1) -> float:
         """
             Returns a similarity score between `ref` and `hyp` using the specified `method`.
         """
@@ -28,7 +42,7 @@ class Evaluator:
             case _:
                 raise ValueError(f"Unsupported evaluation method: {method}")
             
-    def generic_value_eval(ref:object, hyp:object) -> float:
+    def _generic_value_eval(ref:object, hyp:object) -> float:
         """
             Evaluates the similarity between `ref` and `hyp` based on their generic values.
 
@@ -36,7 +50,7 @@ class Evaluator:
         """
         result:float = 0.0
         
-        if type(ref).__eq__(type(hyp)):
+        if type(ref) == type(hyp):
             if ref == hyp:
                 result = 1.0
         elif isinstance(ref, str) and isinstance(hyp, str):
@@ -46,7 +60,7 @@ class Evaluator:
 
         return result
 
-    def datatype_sim_score(ref:object, hyp:object) -> float:
+    def _datatype_sim_score(ref:object, hyp:object) -> float:
         """
             Returns a similarity score between the datatypes of `ref` and `hyp`.
 

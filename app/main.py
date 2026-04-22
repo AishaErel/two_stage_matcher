@@ -11,7 +11,8 @@ def main():
     ##  Uses `initialGeneration()` from `model/initialization.py`.
     # initialGeneration()
 
-    pass
+    test_evaluator:Evaluator = Evaluator(resource.getDataFile("source_1.csv"), resource.getDataFile("healthcare.csv"))
+    print(f"Test Cheap Score (Columns `Gender` vs. `Sex`): {test_evaluator.total_cheap_score('Sex', 'Gender')}")
 
 if __name__ == "__main__":
     main()
