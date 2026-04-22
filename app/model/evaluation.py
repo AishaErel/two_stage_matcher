@@ -13,6 +13,9 @@ class Evaluator:
         self.target_df:pd.DataFrame = pd.read_csv(target_path)
 
     def total_cheap_score(self, ref_col:str, hyp_col:str) -> float:
+        """
+            Temporary cheap score.  Change.
+        """
         result:float = 0.0
         
         ##  tmp note:: 
