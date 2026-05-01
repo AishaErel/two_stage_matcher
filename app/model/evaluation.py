@@ -1,6 +1,8 @@
 ##  Import Standard Libraries
 import difflib
+import numbers
 import Levenshtein
+import numpy as np
 import pandas as pd
 from pathlib import Path
 
@@ -12,7 +14,7 @@ class Evaluator:
         self.source_df:pd.DataFrame = pd.read_csv(source_path)
         self.target_df:pd.DataFrame = pd.read_csv(target_path)
 
-    def total_cheap_score(self, ref_col:str, hyp_col:str) -> float:
+    def total_cheap_score(self, ref_col:str, hyp_col:str, n_samples:int=50) -> float:
         """
             Temporary cheap score.  Change.
         """
@@ -27,21 +29,33 @@ class Evaluator:
         rand_hyp_val = self.target_df[hyp_col].sample(n=1).iloc[0]
 
         name_sim:float = Evaluator._cheap_str_sim_score(ref_col, hyp_col)
-        value_sim:float = Evaluator._generic_value_eval(rand_ref_val, rand_hyp_val)
-        data_sim:float = Evaluator._datatype_sim_score(rand_ref_val, rand_hyp_val)
+        
+        sample_size = min(n_samples, len(self.source_df), len(self.target_df))
+        ref_samples = self.source_df[ref_col].sample(n=sample_size).values
+        hyp_samples = self.target_df[hyp_col].sample(n=sample_size).values
 
-        result = 0.5 * name_sim + 0.3 * value_sim + 0.2 * data_sim
+        scores = []
+        for r, h in zip(ref_samples, hyp_samples):
+            t_sim = Evaluator._datatype_sim_score(r, h)
+            v_sim = Evaluator._generic_value_eval(r, h)
+            scores.append(t_sim * v_sim)
+
+        avg_content_sim = sum(scores) / len(scores) if scores else 0.0
+
+        result = (0.3 * name_sim) + (0.7 * avg_content_sim)
         return result
 
     def _cheap_str_sim_score(ref:str, hyp:str, method:int=1) -> float:
         """
             Returns a similarity score between `ref` and `hyp` using the specified `method`.
         """
+        ref = ref.strip().lower()
+        hyp = hyp.strip().lower()
         match method:
             case 1:
                 return difflib.SequenceMatcher(None, ref, hyp).ratio()
-            case 2:
-                return Levenshtein.ratio(ref, hyp)
+            # case 2:
+            #     return Levenshtein.ratio(ref, hyp)
             case _:
                 raise ValueError(f"Unsupported evaluation method: {method}")
             
@@ -58,23 +72,30 @@ class Evaluator:
                 result = 1.0
         elif isinstance(ref, str) and isinstance(hyp, str):
             result = Evaluator.cheap_str_sim_score(ref, hyp)
-        elif isinstance(ref, (int, float)) and isinstance(hyp, (int, float)):
-            result = max(float(ref), float(hyp)) / min(float(ref), float(hyp))
+
+        if isinstance(ref, (numbers.Number, np.number)) and isinstance(hyp, (numbers.Number, np.number)):
+            diff = abs(float(ref) - float(hyp))
+            result = 1.0 / (1.0 + diff)
 
         return result
 
     def _datatype_sim_score(ref:object, hyp:object) -> float:
         """
             Returns a similarity score between the datatypes of `ref` and `hyp`.
-
-            TODO::  For now, finds score by comparing attributes of each datatype.  
-                    May be circumstantially accurate.  Consider binary/categorical score...
         """
-        ref_attrs = set(dir(ref))
-        hyp_attrs = set(dir(hyp))
-        intersection = ref_attrs.intersection(hyp_attrs)
-        union = ref_attrs.union(hyp_attrs)
-        return len(intersection) / len(union)
+        if type(ref) == type(hyp):
+            return 1.0
+        
+        is_ref_num = isinstance(ref, (numbers.Number, np.number))
+        is_hyp_num = isinstance(hyp, (numbers.Number, np.number))
+        
+        if is_ref_num and is_hyp_num:
+            return 0.9
+        
+        if isinstance(ref, str) and isinstance(hyp, str):
+            return 1.0
+            
+        return 0.0
     
     def __example_datatype_sim_score() -> None:
         """
