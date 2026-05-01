@@ -1,119 +1,121 @@
+##  Import Standard Libraries
 import difflib
-import random
-import re
+import numbers
+import Levenshtein
+import numpy as np
+import pandas as pd
 from pathlib import Path
 
-import pandas as pd
+##  Import Local Libraries
+# Evaluator answers if two columns represent the same kind of data
 
+class Evaluator: 
+    def __init__(self, source_path:Path, target_path:Path) -> None:
+        self.source_df:pd.DataFrame = pd.read_csv(source_path) 
+        self.target_df:pd.DataFrame = pd.read_csv(target_path)
 
-class Evaluator:
-    def __init__(self, source_path: Path, target_path: Path) -> None:
-        self.source_df: pd.DataFrame = pd.read_csv(source_path)
-        self.target_df: pd.DataFrame = pd.read_csv(target_path)
+    
 
-        # Cache inferred column types once
-        self.source_types = {
-            col: Evaluator._infer_column_type(self.source_df[col])
-            for col in self.source_df.columns
-        }
-        self.target_types = {
-            col: Evaluator._infer_column_type(self.target_df[col])
-            for col in self.target_df.columns
-        }
+    def total_cheap_score(self, ref_col:str, hyp_col:str, n_samples:int=50) -> float:
+        """
+            Temporary cheap score.  Change.
+            its meant to test soes column A look like column B based on their data
+            
+        """
+        result:float = 0.0
+        
+        ##  tmp note:: 
+        ##      source data is reference (ground truth table)
+        ##      target data is hypothesis (predicted table)
 
-    def total_cheap_score(self, ref_col: str, hyp_col: str, sample_size: int = 10, seed: int = 42) -> float:
-        name_sim: float = Evaluator._cheap_str_sim_score(ref_col, hyp_col)
+        ##  TODO:: batch random (average?) and collision avoidance
+        rand_ref_val = self.source_df[ref_col].sample(n=1).iloc[0]
+        rand_hyp_val = self.target_df[hyp_col].sample(n=1).iloc[0]
 
-        value_sim: float = Evaluator._column_value_similarity(
-            self.source_df[ref_col],
-            self.target_df[hyp_col],
-            sample_size=sample_size,
-            seed=seed
-        )
+        name_sim:float = Evaluator._cheap_str_sim_score(ref_col, hyp_col)
+        #compare age vs patient_age
+        
+        sample_size = min(n_samples, len(self.source_df), len(self.target_df))
+        ref_samples = self.source_df[ref_col].sample(n=sample_size).values
+        hyp_samples = self.target_df[hyp_col].sample(n=sample_size).values
 
-        data_sim: float = self._datatype_sim_score(ref_col, hyp_col)
+        scores = []
+        for r, h in zip(ref_samples, hyp_samples): #for each pair,
+            t_sim = Evaluator._datatype_sim_score(r, h) #if number vs number its good, string vs string good
+            v_sim = Evaluator._generic_value_eval(r, h) #checs actual closeness such that if numbers close 
+            scores.append(t_sim * v_sim)  #combines them
 
-        result = 0.5 * name_sim + 0.3 * value_sim + 0.2 * data_sim
+        avg_content_sim = sum(scores) / len(scores) if scores else 0.0
+
+        result = (0.3 * name_sim) + (0.7 * avg_content_sim) #final score form paper
         return result
 
-    @staticmethod
-    def _normalize_text(text: str) -> str:
-        text = str(text).lower().replace("_", " ")
-        text = re.sub(r"[^a-z0-9 ]", "", text)
-        return text.strip()
+    def _cheap_str_sim_score(ref:str, hyp:str, method:int=1) -> float:
+        """
+            Returns a similarity score between `ref` and `hyp` using the specified `method`.
+            Checks text similarity
+        """
+        ref = ref.strip().lower()
+        hyp = hyp.strip().lower()
+        match method:
+            case 1:
+                return difflib.SequenceMatcher(None, ref, hyp).ratio()
+            # case 2:
+            #     return Levenshtein.ratio(ref, hyp)
+            case _:
+                raise ValueError(f"Unsupported evaluation method: {method}")
+            
+    def _generic_value_eval(ref:object, hyp:object) -> float:
+        """
+            Evaluates the similarity between `ref` and `hyp` based on their generic values.
+            checks value similairty
 
-    @staticmethod
-    def _cheap_str_sim_score(ref: str, hyp: str) -> float:
-        ref = Evaluator._normalize_text(ref)
-        hyp = Evaluator._normalize_text(hyp)
-        return difflib.SequenceMatcher(None, ref, hyp).ratio()
+            TODO:: Evaluation not really generic yet
+        """
+        result:float = 0.0
+        
+        if type(ref) == type(hyp):
+            if ref == hyp:
+                result = 1.0
+        elif isinstance(ref, str) and isinstance(hyp, str):
+            result = Evaluator._cheap_str_sim_score(ref, hyp) 
 
-    @staticmethod
-    def _sample_values(series: pd.Series, sample_size: int = 10, seed: int = 42) -> list[str]:
-        values = series.dropna().astype(str).tolist()
-        if not values:
-            return []
+        if isinstance(ref, (numbers.Number, np.number)) and isinstance(hyp, (numbers.Number, np.number)):
+            diff = abs(float(ref) - float(hyp))
+            result = 1.0 / (1.0 + diff)
 
-        random.seed(seed)
-        if len(values) <= sample_size:
-            return values
-        return random.sample(values, sample_size)
+        return result
+    
 
-    @staticmethod
-    def _column_value_similarity(
-        ref_series: pd.Series,
-        hyp_series: pd.Series,
-        sample_size: int = 10,
-        seed: int = 42
-    ) -> float:
-        ref_values = Evaluator._sample_values(ref_series, sample_size, seed)
-        hyp_values = Evaluator._sample_values(hyp_series, sample_size, seed)
 
-        ref_tokens = set()
-        hyp_tokens = set()
-
-        for val in ref_values:
-            ref_tokens.update(Evaluator._normalize_text(val).split())
-
-        for val in hyp_values:
-            hyp_tokens.update(Evaluator._normalize_text(val).split())
-
-        if not ref_tokens and not hyp_tokens:
-            return 0.0
-
-        intersection = len(ref_tokens & hyp_tokens)
-        union = len(ref_tokens | hyp_tokens)
-
-        return intersection / union if union > 0 else 0.0
-
-    @staticmethod
-    def _infer_column_type(series: pd.Series) -> str:
-        non_null = series.dropna()
-
-        if non_null.empty:
-            return "unknown"
-
-        # numeric check
-        numeric_count = pd.to_numeric(non_null, errors="coerce").notna().sum()
-        if numeric_count / len(non_null) > 0.8:
-            return "numeric"
-
-        # simple date-like heuristic before expensive parsing
-        sample_as_str = non_null.astype(str).head(20)
-        date_like_count = sample_as_str.str.contains(r"[-/]").sum()
-
-        if date_like_count >= max(1, len(sample_as_str) // 2):
-            parsed = pd.to_datetime(sample_as_str, errors="coerce")
-            if parsed.notna().mean() > 0.8:
-                return "date"
-
-        unique_ratio = non_null.nunique() / len(non_null)
-        if unique_ratio < 0.5:
-            return "categorical"
-
-        return "text"
-
-    def _datatype_sim_score(self, ref_col: str, hyp_col: str) -> float:
-        ref_type = self.source_types[ref_col]
-        hyp_type = self.target_types[hyp_col]
-        return 1.0 if ref_type == hyp_type else 0.0
+    def _datatype_sim_score(ref:object, hyp:object) -> float:
+        """
+            Returns a similarity score between the datatypes of `ref` and `hyp`.
+            checks type compatibility
+        """
+        if type(ref) == type(hyp):
+            return 1.0
+        
+        is_ref_num = isinstance(ref, (numbers.Number, np.number))
+        is_hyp_num = isinstance(hyp, (numbers.Number, np.number))
+        
+        if is_ref_num and is_hyp_num:
+            return 0.9
+        
+        if isinstance(ref, str) and isinstance(hyp, str):
+            return 1.0
+            
+        return 0.0
+    
+    # def __example_datatype_sim_score() -> None:
+    #     """
+    #         Example usage of `datatype_sim_score()`.
+    #         """
+    #     ##  str vs str :: 1.0
+    #     print(f"\"hello\"{type("hello")} vs \"123\"{type("123")}: {Evaluator.datatype_sim_score("hello", "123")}")
+    #     ##  str vs int :: 0.24
+    #     print(f"\"hello\"{type("hello")} vs 123{type(123)}: {Evaluator.datatype_sim_score("hello", 123)}")
+    #     ##  str vs float :: 0.272727...
+    #     print(f"\"hello\"{type("hello")} vs 123.0{type(123.0)}: {Evaluator.datatype_sim_score("hello", 123.0)}")
+    #     ##  int vs float :: 0.727272...
+    #     print(f"123{type(123)} vs 123.0{type(123.0)}: {Evaluator.datatype_sim_score(123, 123.0)}")
