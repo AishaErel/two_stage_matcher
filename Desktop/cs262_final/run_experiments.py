@@ -45,12 +45,19 @@ def run_experiment(source_file, gt_file):
     target_df = pd.read_csv(TARGET_FILE)
     gt_df = pd.read_csv(gt_file)
 
+    evaluator = Evaluator(source_file,TARGET_FILE)
+
     # stage 1
     results_df, top1_df, topk_dict = run_stage1(source_df, target_df)
     topk_df = topk_dict[3] #best scores per column based on stage 1 results (which uses diff k values)
 
     #stage 2
-    final_df = stage2_rerank(source_df, target_df, topk_df)
+    final_df = stage2_rerank(
+    source_df,
+    target_df,
+    topk_dict[3],
+    evaluator=evaluator   
+)
 
     # save predictions temporarily (Evaluator needs file paths)
     pred_path = "temp_predictions.csv"
