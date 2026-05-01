@@ -1,8 +1,9 @@
-from ollama import llm_score
 import pandas as pd
+from ollama import llm_score
+from evaluator import Evaluator
 
 
-def stage2_rerank(source_df, target_df, topk_df, evaluator=None, k=3):
+def stage2_rerank(source_df, target_df, topk_df, evaluator, k=3):
 
     final_results = []
 
@@ -15,31 +16,21 @@ def stage2_rerank(source_df, target_df, topk_df, evaluator=None, k=3):
 
         for t_col in candidates:
 
-            # fallback safety
-            if evaluator is not None:
-                s_series = evaluator.source_df[s_col]
-                t_series = evaluator.target_df[t_col]
-            else:
-                s_series = source_df[s_col]
-                t_series = target_df[t_col]
+            llm_s = llm_score(
+            s_col,
+            t_col,
+            source_df[s_col],
+            target_df[t_col]
+        )
 
-            score = llm_score(
-                s_col,
-                t_col,
-                s_series,
-                t_series
-            )
+        # fallback if LLM fails
+            if llm_s is None:
+                llm_s = evaluator.total_cheap_score(s_col, t_col)
 
-            # fallback if LLM fails
-            if score is None:
-                score = 0.0
-
-            # keep best candidate
-            if score > best_score:
-                best_score = score
+            if llm_s > best_score:
+                best_score = llm_s
                 best_target = t_col
 
-        # append ONCE per source column
         final_results.append({
             "source": s_col,
             "target": best_target,
