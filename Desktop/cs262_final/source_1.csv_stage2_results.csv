@@ -1,0 +1,16 @@
+source,target,score
+Patient_Name,Name,0.15
+Patient_Age,Age,0.20387231098589398
+Sex,Gender,0.4026666666666666
+Blood_Group,Blood Type,0.28342857142857136
+Condition,Medical Condition,0.2916923076923077
+Adm_Date,Name,0.15
+Physician,Medication,0.1263157894736842
+Hospital_Name,Hospital,0.22857142857142854
+Insurer,Insurance Provider,0.28
+Total_Charge,Discharge Date,0.13846153846153847
+Room_No,Room Number,0.18226815199183038
+Admission_Category,Admission Type,0.40225
+Discharge_Date,Discharge Date,0.2785714285714286
+Drug,Medication,0.19685714285714284
+Lab_Results,Test Results,0.3506086956521739

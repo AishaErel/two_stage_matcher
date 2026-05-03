@@ -1,5 +1,5 @@
 import pandas as pd
-from ollama import llm_score
+from ollama_handler import llm_score
 from evaluator import Evaluator
 
 
@@ -17,11 +17,11 @@ def stage2_rerank(source_df, target_df, topk_df, evaluator, k=3):
         for t_col in candidates:
 
             llm_s = llm_score(
-            s_col,
-            t_col,
-            source_df[s_col],
-            target_df[t_col]
-        )
+                s_col,
+                t_col,
+                source_df[s_col],
+                target_df[t_col]
+            )
 
         # fallback if LLM fails
             if llm_s is None:

@@ -1,0 +1,17 @@
+source,target,score
+Nm,Name,0.19999999999999998
+Age_yrs,Age,0.2673846979850194
+Gndr,Gender,0.548
+Bld_Type,Blood Type,0.31733333333333336
+Med_Cond,Medical Condition,0.35
+AdmDt,Name,0.13333333333333333
+Dr_Name,Name,0.21818181818181817
+Hosp,Hospital,0.19999999999999998
+InsuranceCo,Insurance Provider,0.3468965517241379
+Bill_Amt,Billing Amount,0.19106278937092136
+Rm_No,Room Number,0.12377071831985294
+Adm_Type,Admission Type,0.49890909090909086
+Dschg_Dt,Discharge Date,0.1909090909090909
+Med,Medication,0.2784615384615384
+Test_Out,Test Results,0.474
+Random_ID,Insurance Provider,0.13333333333333333

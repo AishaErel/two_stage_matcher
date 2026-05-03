@@ -1,0 +1,4 @@
+accuracy,total,correct,dataset
+0.8,15,12,source_1.csv
+0.8666666666666667,15,13,source_2.csv
+0.8666666666666667,15,13,source_3.csv

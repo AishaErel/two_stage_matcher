@@ -2,9 +2,8 @@ import requests
 import random
 import json
 
-OLLAMA_URL = "http://localhost:11434/api/generate"
-MODEL = "llama3"
-
+CONST_OLLAMA_URL = "http://localhost:11434/api/generate"
+CONST_MODEL = "llama3"
 
 def serialize_column(name, series, sample_size=10):
     values = series.dropna().astype(str).tolist()
@@ -20,28 +19,28 @@ def serialize_column(name, series, sample_size=10):
 
 def build_prompt(source_obj, target_obj):
     return f"""
-You are a schema matching expert.
+        You are a schema matching expert.
 
-Task:
-Given two columns, estimate how likely they represent the same concept.
+        Task:
+        Given two columns, estimate how likely they represent the same concept.
 
-Return ONLY valid JSON in this format:
+        Return ONLY valid JSON in this format:
 
-{{
-  "score": float between 0 and 1
-}}
+        {{
+        "score": float between 0 and 1
+        }}
 
-Rules:
-- No explanations
-- No extra text
-- Only JSON
+        Rules:
+        - No explanations
+        - No extra text
+        - Only JSON
 
-SOURCE:
-{json.dumps(source_obj)}
+        SOURCE:
+        {json.dumps(source_obj)}
 
-TARGET:
-{json.dumps(target_obj)}
-"""
+        TARGET:
+        {json.dumps(target_obj)}
+    """
 
 
 def extract_score(raw_text):
