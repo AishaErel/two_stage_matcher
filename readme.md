@@ -1,4 +1,6 @@
-# CS_262_FINAL
+# Magneto-Inspired Two-Stage Column Matching Framework
+
+A research-oriented prototype that explores efficient matching using a two-stage candidate ranking pipeline. The framework first applies lightweight similarity functions to rank candidates cheaply, followed by stronger and more computationally expensive similarity analysis on only the top-k candidates.
 
 ## File Structure
 ```
