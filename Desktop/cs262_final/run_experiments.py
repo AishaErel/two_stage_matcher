@@ -4,8 +4,13 @@ from stage_1 import run_stage1
 from stage_2 import stage2_rerank
 from evaluator import Evaluator
 from initialization import initialGeneration
+from initialization import initialGeneration, add_distractor_columns
+import time
 
 initialGeneration() 
+target_df = pd.read_csv("healthcare.csv")
+target_wide = add_distractor_columns(target_df, n_extra=100)
+target_wide.to_csv("target_wide.csv", index=False)
 # loads source_df (ground truth data) and target_df (predicted_data)
 
 def evaluate_mappings(pred_df, gt_df):
@@ -34,7 +39,7 @@ DATASETS = [
     ("source_3.csv", "ground_truth_3.csv"),
 ]
 
-TARGET_FILE = "healthcare.csv"
+TARGET_FILE = "target_wide.csv"
 
 
 from pathlib import Path
@@ -48,6 +53,8 @@ def run_experiment(source_file, gt_file):
     evaluator = Evaluator(source_file,TARGET_FILE)
 
     # stage 1
+
+    start = time.time()
     results_df, top1_df, topk_dict = run_stage1(source_df, target_df)
     topk_df = topk_dict[3] #best scores per column based on stage 1 results (which uses diff k values)
 
@@ -58,6 +65,10 @@ def run_experiment(source_file, gt_file):
     topk_dict[3],
     evaluator=evaluator   
 )
+    end = time.time()
+
+    two_stage_time = end - start
+    print(f"Two-Stage Time: {two_stage_time:.4f} seconds")
 
     # save predictions temporarily (Evaluator needs file paths)
     pred_path = "temp_predictions.csv"
