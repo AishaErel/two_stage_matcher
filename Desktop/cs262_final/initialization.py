@@ -61,29 +61,23 @@ __TRUTH_MAPPING_3:dict[str, str] = {
     "Test Results": "Results"
 }
 
-def __processHealthcareData(tgt_mapping:dict[str, str], healthcare_csv:str, output_csv:str, random_id:bool=False) -> None:
-    """
-        Takes the inputted `heathcare_csv` file and remaps the column header names to the values in tgt_mapping.  
-        Writes this file to `output_csv`.
+def __processHealthcareData(
+    tgt_mapping: dict[str, str],
+    healthcare_csv: str,
+    output_csv: str,
+    random_id: bool = False,
+    n_distractors: int = 0
+) -> None:
 
-        If `random_id` is specified, then a "Random_ID" column is included
-    """
-    ##  hard-column alternative
-    # healthcare_df = pd.read_csv(healthcare_csv, names=list(__CONST_TRUTH_MAPPING.keys()), header=0)
-    
-    ##  dynamic-column mapping
     healthcare_df = pd.read_csv(healthcare_csv)
-    try:
-        healthcare_df.rename(columns=tgt_mapping, inplace=True)
-    except KeyError as e:
-        print(f"Column not found in healthcare data: {e}")
+    healthcare_df.rename(columns=tgt_mapping, inplace=True)
 
-    ##  add "Random_ID" column
-    ##  TODO:: maybe change to avoid collision?
     if random_id:
         healthcare_df["Random_ID"] = range(len(healthcare_df))
 
-    ##  output to desired file
+    if n_distractors > 0:
+        healthcare_df = add_distractor_columns(healthcare_df, n_extra=n_distractors)
+
     healthcare_df.to_csv(output_csv, index=False)
 def __generateGroundTruth(tgt_mapping: dict[str, str], header_names: list[str], output_csv: str) -> None:
     """
@@ -101,29 +95,45 @@ def __generateGroundTruth(tgt_mapping: dict[str, str], header_names: list[str], 
     mapped_df = pd.DataFrame(list(reversed_mapping.items()), columns=header_names)
     mapped_df.to_csv(output_csv, index=False)
 
+def add_distractor_columns(df: pd.DataFrame, n_extra: int = 50) -> pd.DataFrame:
+    df = df.copy()
+    n = len(df)
+
+    for i in range(n_extra):
+        if i % 5 == 0:
+            df[f"Fake_Numeric_{i}"] = range(n)
+
+        elif i % 5 == 1:
+            values = (["A", "B", "C", "D"] * ((n // 4) + 1))[:n]
+            df[f"Fake_Category_{i}"] = values
+
+        elif i % 5 == 2:
+            df[f"Fake_Text_{i}"] = [f"text_{j % 10}" for j in range(n)]
+
+        elif i % 5 == 3:
+            df[f"Fake_Date_{i}"] = pd.date_range("2020-01-01", periods=n, freq="D").astype(str)
+
+        else:
+            df[f"Fake_ID_{i}"] = [f"ID_{j}" for j in range(n)]
+
+    return df
+def generateWideTarget(n_distractors: int = 100) -> None:
+    target_df = pd.read_csv("healthcare.csv")
+    target_wide = add_distractor_columns(target_df, n_extra=n_distractors)
+    target_wide.to_csv("target_wide.csv", index=False)
 def initialGeneration() -> None:
-    """
-        Generates all initial database `.csv` files to be used.
-            -   `source_1.csv`
-            -   `source_2.csv`
-            -   `source_3.csv`
-            -   `ground_truth_1.csv`
-            -   `ground_truth_2.csv`
-            -   `ground_truth_3.csv`
+    __ground_truth_headers: list[str] = ["source", "target"]
 
-        Uses `__processHealthcareData()` and `__generateGroundTruth()`.
-    """
-    __ground_truth_headers:list[str] = ["source", "target"]
+    __processHealthcareData(__TRUTH_MAPPING_1, "healthcare.csv", "source_1.csv")
+    __generateGroundTruth(__TRUTH_MAPPING_1, __ground_truth_headers, "ground_truth_1.csv")
 
-    ##  mapping 1
-    __processHealthcareData(__TRUTH_MAPPING_1, ("healthcare.csv"), ("source_1.csv"))
-    __generateGroundTruth(__TRUTH_MAPPING_1, __ground_truth_headers, ("ground_truth_1.csv"))
+    __processHealthcareData(__TRUTH_MAPPING_2, "healthcare.csv", "source_2.csv", random_id=True)
+    __generateGroundTruth(__TRUTH_MAPPING_2, __ground_truth_headers, "ground_truth_2.csv")
 
-    ##  mapping 2
-    __processHealthcareData(__TRUTH_MAPPING_2, ("healthcare.csv"), ("source_2.csv"), random_id=True)
-    ##  handle `random_state` column too?
-    __generateGroundTruth(__TRUTH_MAPPING_2, __ground_truth_headers,("ground_truth_2.csv"))
+    __processHealthcareData(__TRUTH_MAPPING_3, "healthcare.csv", "source_3.csv")
+    __generateGroundTruth(__TRUTH_MAPPING_3, __ground_truth_headers, "ground_truth_3.csv")
 
-    ##  mapping 3
-    __processHealthcareData(__TRUTH_MAPPING_3, ("healthcare.csv"), ("source_3.csv"))
-    __generateGroundTruth(__TRUTH_MAPPING_3, __ground_truth_headers, ("ground_truth_3.csv"))
+    generateWideTarget(n_distractors=100)
+
+if __name__ == "__main__":
+    initialGeneration()
